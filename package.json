@@ -1,0 +1,11 @@
+{
+  "name": "yass",
+  "description": "Yet Another Samlib Synchronizer",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "3.x",
+    "mustache": "0.7.x",
+    "request": "2.11.x",
+    "underscore": "1.4.x"
+  }
+}
