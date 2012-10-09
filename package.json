@@ -6,6 +6,8 @@
     "express": "3.x",
     "mustache": "0.7.x",
     "request": "2.11.x",
-    "underscore": "1.4.x"
+    "underscore": "1.4.x",
+    "iconv-lite": "0.2.x",
+    "htmlparser": "1.7.x"
   }
 }
