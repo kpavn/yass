@@ -3,7 +3,9 @@
 var _ = require("underscore"),
     fs = require("fs"),
     request = require("request"),
-    iconv = require("iconv-lite");
+    iconv = require("iconv-lite"),
+	htmlparser = require("htmlparser"),
+	sys = require("sys");;
 
 // convert author's data from | delimited text file to JSON array
 var convertData = function() {
@@ -24,19 +26,41 @@ var convertData = function() {
 	console.log("Convertation is finished");	
 };
 
+var decodeRaw = function(httpHeaders, rawData) {
+	var contentType = httpHeaders['content-type'];
+	var matches;
+	if (contentType != null) {
+		matches = contentType.match(/charset=(.*)$/);
+	};
+	var encoding = matches == null ? "windows-1251" : matches[1];
+	return iconv.decode(rawData, encoding);	
+};
+
+var parseHtml = function(htmlData, onOk, onError) {
+	var handler = new htmlparser.DefaultHandler(
+		function (error, dom) {
+			if (error) {
+				onError(error);
+			}
+			else {
+				// 1. Поиск имени автора body -> h3 -> имя -> br
+				// 2. Поиск произведений dl -> dt -> li -> данные по книжке
+			}
+		},
+		{verbose: false, ignoreWhitespace: true});
+	var parser = new htmlparser.Parser(handler);
+	parser.parseComplete(rawHtml);	
+};
+
 var parsePage = function(url, callbackFn, errorFn) {
 	request({uri: url, encoding: null}, function(err, response, body) {
-		if (!err && response.statusCode == 200) {
-			// 1. convert from 'content-type': 'text/html; charset=windows-1251' to utf8 
-			var encoding = response.headers['content-type'].match(/charset=(.*)$/)[1];
-			console.log("Found encoding: " + encoding);
-			var data = iconv.decode(body, encoding);
+		if (!err && response.statusCode === 200) {
+			// 1. convert from 'content-type': 'text/html; charset=windows-1251' to utf8
+			var data = decodeRaw(response.headers, body);
 			// 2. parse html page and extract required data
-			callbackFn(response, data);
+			parseHtml(data, callbackFn, errorFn);
 		} else {
-			console.log("Error while get url " + url + "\r\n" + "Error: " + err +
-				"\r\n" + "HTTP code " + response.statusCode);
-			errorFn(err, response);
+			errorFn(err);
 		};
 	});
 };
@@ -59,18 +83,4 @@ parsePage("http://samlib.ru/k/kotikowa_m_w/indexdate.shtml",
 	function(err, response) {});
 */
 
-var htmlparser = require("htmlparser"), sys = require("sys");
-
-var handler = new htmlparser.DefaultHandler(function (error, dom) {
-    if (error)
-        console.log(error);
-    else
-        console.log("done");
-}, {verbose: false, ignoreWhitespace: true});
-var rawHtml = fs.readFileSync("D:/prj/yass/tests/test.html", "utf8");
-var parser = new htmlparser.Parser(handler);
-parser.parseComplete(rawHtml);
-var nameA = htmlparser.DomUtils.getElementsByTagName("h3", handler.dom);
-sys.puts(sys.inspect(nameA, false, null));	
-var nameA = htmlparser.DomUtils.getElementsByTagName("dl", handler.dom);
-sys.puts(sys.inspect(nameA, false, null));	
+exports.decodeRaw = decodeRaw;
