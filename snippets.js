@@ -1,3 +1,5 @@
+/*jslint nomen: true, node: true, stupid: true */
+"use strict";
 // code snippets from node console
 
 var _ = require("underscore"),
@@ -5,63 +7,58 @@ var _ = require("underscore"),
     request = require("request"),
     iconv = require("iconv-lite"),
 	htmlparser = require("htmlparser"),
-	sys = require("sys");;
+	sys = require("sys"),
+	utils = require("./utils");
 
 // convert author's data from | delimited text file to JSON array
-var convertData = function() {
-	var rawData = fs.readFileSync("d:/tmp/data/authors.txt", "utf8");
+var convertData = function () {
+	var rawData, lines, auData, fields;
+
+	rawData = fs.readFileSync("d:/tmp/data/authors.txt", "utf8");
 	if (!rawData) {
 		console.error("Error while reading file");
-	};
+	}
 
-	var lines = rawData.split("\r\n");
+	lines = rawData.split("\r\n");
 
-	var auData = _.map(lines, function(line) {
-		var fields = line.split("|");
+	auData = _.map(lines, function (line) {
+		fields = line.split("|");
 		return {authorName: fields[0], authUrl: fields[1], bookUrls: _.rest(fields, 2)};
 	});
 
 	fs.writeFileSync("d:/tmp/data/authors.json", JSON.stringify(auData), "utf8");
 
-	console.log("Convertation is finished");	
+	console.log("Convertation is finished");
 };
 
-var decodeRaw = function(httpHeaders, rawData) {
-	var contentType = httpHeaders['content-type'];
-	var matches;
-	if (contentType != null) {
-		matches = contentType.match(/charset=(.*)$/);
-	};
-	var encoding = matches == null ? "windows-1251" : matches[1];
-	return iconv.decode(rawData, encoding);	
-};
-
-var parseHtml = function(htmlData, onOk, onError) {
-	var handler = new htmlparser.DefaultHandler(
+var parseHtml = function (htmlData, onOk, onError) {
+	var handler, parser;
+	handler = new htmlparser.DefaultHandler(
 		function (error, dom) {
 			if (error) {
 				onError(error);
-			}
-			else {
-				// 1. Ïîèñê èìåíè àâòîðà body -> h3 -> èìÿ -> br
-				// 2. Ïîèñê ïðîèçâåäåíèé dl -> dt -> li -> äàííûå ïî êíèæêå
+			} else {
+				// 1. ÐŸÐ¾Ð¸ÑÐº Ð¸Ð¼ÐµÐ½Ð¸ Ð°Ð²Ñ‚Ð¾Ñ€Ð° body -> h3 -> Ð¸Ð¼Ñ -> br
+				// 2. ÐŸÐ¾Ð¸ÑÐº Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ð¹ dl -> dt -> li -> Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¿Ð¾ ÐºÐ½Ð¸Ð¶ÐºÐµ
+				onOk();
 			}
 		},
-		{verbose: false, ignoreWhitespace: true});
-	var parser = new htmlparser.Parser(handler);
-	parser.parseComplete(rawHtml);	
+		{verbose: false, ignoreWhitespace: true}
+	);
+	parser = new htmlparser.Parser(handler);
+	parser.parseComplete(htmlData);
 };
 
-var parsePage = function(url, callbackFn, errorFn) {
-	request({uri: url, encoding: null}, function(err, response, body) {
+var parsePage = function (url, callbackFn, errorFn) {
+	request({uri: url, encoding: null}, function (err, response, body) {
 		if (!err && response.statusCode === 200) {
 			// 1. convert from 'content-type': 'text/html; charset=windows-1251' to utf8
-			var data = decodeRaw(response.headers, body);
+			var data = utils.decodeRaw(response.headers, body);
 			// 2. parse html page and extract required data
 			parseHtml(data, callbackFn, errorFn);
 		} else {
 			errorFn(err);
-		};
+		}
 	});
 };
 
@@ -70,17 +67,15 @@ var http = require("http");
 
 http.createServer(function(request, response) {
 	response.writeHead(200, {"Content-Type": "text/plain"});
-  	response.write("Hello World");
-  	response.end();
+	response.write("Hello World");
+	response.end();
 }).listen(8080);
 */
 
 /*
-parsePage("http://samlib.ru/k/kotikowa_m_w/indexdate.shtml", 
+parsePage("http://samlib.ru/k/kotikowa_m_w/indexdate.shtml",
 	function(response, body) {
 		console.log(body);
-	}, 
+	},
 	function(err, response) {});
 */
-
-exports.decodeRaw = decodeRaw;
